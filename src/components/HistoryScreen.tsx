@@ -23,7 +23,7 @@ export function HistoryScreen({ onLoadGraph, user }: { onLoadGraph: (graph: any)
         return;
       }
       try {
-        const response = await fetch(`http://localhost:3001/api/graphs?userEmail=${user.email}`);
+        const response = await fetch(`/api/graphs?userEmail=${user.email}`);
         const data = await response.json();
         if (data.success) {
           setGraphs(data.graphs);

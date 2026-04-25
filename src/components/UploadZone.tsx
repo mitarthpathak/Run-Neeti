@@ -48,7 +48,7 @@ export function UploadZone({ setGraphData, setUploads, user }: UploadZoneProps) 
         } : u));
       }, 800);
 
-      const response = await fetch('http://localhost:3001/api/upload', {
+      const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
       });
