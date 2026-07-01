@@ -1,20 +1,34 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Run-Neeti 🏃‍♂️⚡
 
-# Run and deploy your AI Studio app
+Run-Neeti is a simple, fun way to **track your runs and keep the momentum alive**.  
+No clutter, no over-engineering — just a clean space to log, challenge yourself, and stay consistent.
 
-This contains everything you need to run your app locally.
+---
 
-View your app in AI Studio: https://ai.studio/apps/e2ba361b-a801-4318-a387-6f9122cb5f22
+## 🔑 Features
+- Quick run logging
+- Progress tracking over time
+- Streaks & challenges for motivation
+- Minimal UI, maximum focus
 
-## Run Locally
+---
 
-**Prerequisites:**  Node.js
+## 🚀 Getting Started
+```bash
+# Clone the repo
+git clone https://github.com/mitarthpathak/Run-Neeti.git
 
+# Enter the folder
+cd Run-Neeti
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+# Install dependencies
+npm install
+
+# Fire it up
+npm start
+```
+
+## 🎯 Why Run-Neeti?
+
+Because running should feel good — not like filling out a spreadsheet.
+This project is about simplicity, motivation, and momentum.
