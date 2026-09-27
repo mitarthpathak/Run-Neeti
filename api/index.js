@@ -1,9 +1,4 @@
+// Vercel serverless entry: every /api/* request is routed here (see vercel.json).
 import app from '../server/index.js';
-
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
 
 export default app;

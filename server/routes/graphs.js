@@ -1,19 +1,29 @@
 import express from 'express';
-import GraphModel from '../models/Graph.js';
+import { deleteGraph, listGraphs } from '../lib/db.js';
+import { requireAuth } from '../lib/auth.js';
 
 const router = express.Router();
 
-// Fetch saved graphs for a specific user
-router.get('/graphs', async (req, res) => {
-  try {
-    const { userEmail } = req.query;
-    const query = userEmail ? { userEmail } : {};
-    const graphs = await GraphModel.find(query).sort({ createdAt: -1 }).limit(20);
-    res.json({ success: true, graphs });
-  } catch (err) {
-    console.error('Error fetching graphs:', err.message);
-    res.status(500).json({ success: false, error: err.message });
-  }
+// Saved graphs of the signed-in user.
+router.get('/graphs', requireAuth, async (req, res) => {
+  const graphs = await listGraphs(req.user);
+  res.json({
+    success: true,
+    graphs: graphs.map(g => ({
+      _id: String(g._id),
+      filename: g.filename,
+      createdAt: g.createdAt,
+      metadata: g.metadata,
+      graph: g.graph,
+      fallbackUsed: g.source === 'fallback',
+    })),
+  });
+});
+
+router.delete('/graphs/:id', requireAuth, async (req, res) => {
+  const ok = await deleteGraph(req.params.id, req.user);
+  if (!ok) return res.status(404).json({ success: false, error: 'Graph not found.' });
+  res.json({ success: true });
 });
 
 export default router;
