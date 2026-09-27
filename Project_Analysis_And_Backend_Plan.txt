@@ -1,35 +1,26 @@
-=== RUN-NEETI PROJECT ANALYSIS & BACKEND PLAN (UPDATED) ===
+=== RUN-NEETI PROJECT STATUS ===
 
-1. KYA-KYA HO CHUKA HAI? (Current Status - Milestone 1 Success)
+1. KYA-KYA HO CHUKA HAI? (Current Status)
 ------------------------------------------------------
-Abhi aapka project ~70% "Full-Stack Functional" ho chuka hai.
+- AI: Groq hata kar Google Gemini lagaya (gemini-flash-latest + flash-lite backup).
+  Poori PDF ek hi call me analyse hoti hai (~10-30 sec), Vercel ki 60s limit ke andar.
+- Scanned PDF (bina text wali) bhi chalti hai: Gemini PDF file ko seedha padhta hai.
+- AI ka graph ab sahi se save aur return hota hai (pehle har baar fallback aa jata tha).
+- MongoDB optional: connect na ho to data memory me rehta hai, app band nahi hota.
+- Login/Signup ab server par hai: password hash hota hai, token se history milti hai.
+  Koi bhi dusre user ka data nahi dekh sakta.
+- Upload limits: sirf PDF, max 4 MB, rate limit.
+- Frontend: Upload screen ka crash fix, graph readable aur fast, history me delete,
+  details page me AI ka roadmap, mobile layout, saaf error messages.
+- Tests: server ke 9 automated tests (`npm test`) + Playwright se poora flow check kiya.
 
-- UI & Design (100% Done): Frontend fully premium aur dynamic hai. Dashboard, Upload Zone, aur Graph Visualization interfaces ready hain.
-- Secure Backend Server (100% Done): Express server (port 3001) setup ho chuka hai. 'gemini.ts' se hata kar API keys ko Backend (.env) me secure kar diya gaya hai.
-- PDF Ingestion Pipeline (100% Done): Frontend (`UploadZone.tsx`) se PDF backend me ja rahi hai, text extract ho raha hai, aur Gemini AI se structured JSON data wapas aa raha hai.
-- Error Handling (100% Done): Cleanup logic implemented. Raw alerts ki jagah ab frontend par clean alerts ("AI quota exceeded", etc.) dikhte hain.
-
-2. WEAK POINTS / LOOPHOLES (Jo abhi theek karne hain)
+2. DEPLOY KE LIYE KYA KARNA HAI?
 ------------------------------------------------------
-- The 6,000 Character Cutoff: Abhi code sirf pehle 6,000 characters (2-3 pages) padhta hai. Baaki PDF ignore ho jati hai.
-- No Persistence: Page refresh karne par graph gayab ho jata hai. MongoDB connect nahi hua hai.
-- API Rate Limits: Beta models (2.5, 3.1) me quota bohot kam hai. (1.5/2.0 toggle implemented).
+- Vercel → Settings → Environment Variables: GEMINI_API_KEY, MONGO_URI, AUTH_SECRET.
+- MongoDB Atlas → Network Access → 0.0.0.0/0 allow karo (Vercel ke IP badalte rehte hain).
 
-3. AAGE KYA KARNA HAI? (The Remaining 30%)
+3. AAGE KYA KAR SAKTE HAIN? (Ideas)
 ------------------------------------------------------
-1. SMART CHUNKING (High Priority): Pure PDF ko 10,000 character ke pieces me divide karke analyze karna taaki koi bhi topic miss na ho.
-2. DATABASE INTEGRATION (MongoDB): User ke generated graphs ko Database me save karna taaki user login karke apni history dekh sake.
-3. USER AUTHENTICATION: Sign-In functionality active karna (JWT or Firebase).
-4. GRAPH EDITING TOOLS: Frontend me nodes delete karne ya rename karne ka option dena taaki AI ki mistakes user manually theek kar sake.
-5. EXPORT OPTIONS: Graph ko as an Image (PNG) ya JSON file download karne ka feature.
-
-4. UPDATED TECH STACK:
-------------------------------------------------------
-- Frontend: React + D3/Canvas + Motion
-- Backend: Node.js + Express.js
-- AI: Google Gemini 2.0 Flash (Optimized Quota)
-- Parsing: Multer (File Handling) + PDF-Parse (Extraction)
-- Storage: MongoDB (Pending Implementation)
-
-CONCLUSION:
-Infrastructure ready hai, aur API pipeline chal rahi hai. Ab focus sirf "Data Persistence" (Database) aur "Comprehensive Analysis" (Full PDF) par hai.
+1. GRAPH EDITING: nodes rename/delete karna taaki AI ki galti user theek kar sake.
+2. EXPORT: graph ko PNG ya JSON me download karna.
+3. Badi PDFs (4 MB se zyada) ke liye direct cloud upload.

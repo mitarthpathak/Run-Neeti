@@ -2,10 +2,11 @@ import { motion } from 'motion/react';
 
 interface HeroScreenProps {
   onStartJourney: () => void;
-  onExploreArchives: () => void;
+  onOpenSaved: () => void;
+  isSignedIn: boolean;
 }
 
-export function HeroScreen({ onStartJourney, onExploreArchives }: HeroScreenProps) {
+export function HeroScreen({ onStartJourney, onOpenSaved, isSignedIn }: HeroScreenProps) {
   return (
     <div className="flex flex-col items-center text-center space-y-12 py-12">
       <motion.div 
@@ -22,7 +23,7 @@ export function HeroScreen({ onStartJourney, onExploreArchives }: HeroScreenProp
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-          className="text-[5.5rem] md:text-[7rem] font-headline font-bold leading-[0.85] tracking-tight cursor-default group"
+          className="text-[3.25rem] sm:text-[5.5rem] md:text-[7rem] font-headline font-bold leading-[0.85] tracking-tight cursor-default group"
         >
           <motion.span
             className="inline-block"
@@ -94,10 +95,10 @@ export function HeroScreen({ onStartJourney, onExploreArchives }: HeroScreenProp
         className="flex flex-col gap-4 w-full max-w-xs"
       >
         <button onClick={onStartJourney} className="bg-primary text-on-primary font-bold py-4 rounded-xl flex items-center justify-center gap-2 hover:opacity-90 transition-opacity shadow-[0_4px_16px_rgba(8,145,178,0.25)]">
-          Start Your Journey <span className="material-symbols-outlined">arrow_downward</span>
+          Start Your Journey <span className="material-symbols-outlined">arrow_forward</span>
         </button>
-        <button onClick={onExploreArchives} className="bg-surface-container-high text-on-surface font-bold py-4 rounded-xl hover:bg-surface-bright transition-colors">
-          Explore Public Archives
+        <button onClick={onOpenSaved} className="bg-surface-container-high text-on-surface font-bold py-4 rounded-xl hover:bg-surface-bright transition-colors">
+          {isSignedIn ? 'Open Saved Maps' : 'Sign In to Save Maps'}
         </button>
       </motion.div>
 
@@ -110,8 +111,8 @@ export function HeroScreen({ onStartJourney, onExploreArchives }: HeroScreenProp
       >
         {[
           { icon: 'hub', label: 'Graph Synthesis', value: 'AI-Powered' },
-          { icon: 'bolt', label: 'Processing', value: 'Real-time' },
-          { icon: 'menu_book', label: 'PDF Analysis', value: 'Deep Scan' },
+          { icon: 'bolt', label: 'Powered by', value: 'Gemini AI' },
+          { icon: 'quiz', label: 'Self Test', value: 'Quizzes' },
         ].map((feat, i) => (
           <motion.div
             key={i}

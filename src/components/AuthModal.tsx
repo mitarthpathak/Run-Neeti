@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import type React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { User } from '../types';
+import { login, signup } from '../lib/api';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -17,6 +19,7 @@ export function AuthModal({ isOpen, onClose, onAuth }: AuthModalProps) {
   const [age, setAge] = useState('');
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const resetForm = () => {
     setEmail('');
@@ -31,17 +34,18 @@ export function AuthModal({ isOpen, onClose, onAuth }: AuthModalProps) {
     resetForm();
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting) return;
     setError('');
 
-    // Basic validation
+    // Basic validation (the server validates again)
     if (!email.trim() || !password.trim()) {
       setError('Email and password are required.');
       return;
     }
 
-    if (!/\S+@\S+\.\S+/.test(email)) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       setError('Please enter a valid email address.');
       return;
     }
@@ -56,45 +60,25 @@ export function AuthModal({ isOpen, onClose, onAuth }: AuthModalProps) {
         setError('Phone number is required.');
         return;
       }
-      if (!age.trim() || isNaN(Number(age)) || Number(age) < 1) {
+      const ageNum = Number(age);
+      if (!age.trim() || !Number.isInteger(ageNum) || ageNum < 1 || ageNum > 120) {
         setError('Please enter a valid age.');
         return;
       }
-
-      // Save user to localStorage
-      const user: User = {
-        email: email.trim(),
-        phone: phone.trim(),
-        password: password,
-        age: age.trim(),
-        name: email.split('@')[0],
-      };
-      
-      // Store users list
-      const existingUsers: User[] = JSON.parse(localStorage.getItem('run_neeti_users') || '[]');
-      const alreadyExists = existingUsers.find(u => u.email === user.email);
-      if (alreadyExists) {
-        setError('An account with this email already exists. Please sign in.');
-        return;
-      }
-      existingUsers.push(user);
-      localStorage.setItem('run_neeti_users', JSON.stringify(existingUsers));
-      localStorage.setItem('run_neeti_current_user', JSON.stringify(user));
-      onAuth(user);
-    } else {
-      // Sign in — check localStorage
-      const existingUsers: User[] = JSON.parse(localStorage.getItem('run_neeti_users') || '[]');
-      const found = existingUsers.find(u => u.email === email.trim() && u.password === password);
-      if (!found) {
-        setError('Invalid email or password.');
-        return;
-      }
-      localStorage.setItem('run_neeti_current_user', JSON.stringify(found));
-      onAuth(found);
     }
 
-    resetForm();
-    onClose();
+    setSubmitting(true);
+    try {
+      const user = mode === 'signup'
+        ? await signup({ email: email.trim(), password, phone: phone.trim(), age: Number(age) })
+        : await login(email.trim(), password);
+      resetForm();
+      onAuth(user);
+    } catch (err: any) {
+      setError(err?.message || 'Something went wrong. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -121,7 +105,9 @@ export function AuthModal({ isOpen, onClose, onAuth }: AuthModalProps) {
             <div className="bg-white rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] w-full max-w-md overflow-hidden border border-slate-100">
               {/* Header */}
               <div className="relative p-8 pb-0">
-                <button 
+                <button
+                  type="button"
+                  aria-label="Close"
                   onClick={onClose}
                   className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors"
                 >
@@ -138,6 +124,7 @@ export function AuthModal({ isOpen, onClose, onAuth }: AuthModalProps) {
                 {/* Tab Switcher */}
                 <div className="flex bg-slate-100 rounded-xl p-1 gap-1">
                   <button
+                    type="button"
                     onClick={() => switchMode('signin')}
                     className={cn(
                       "flex-1 py-2.5 text-sm font-bold rounded-lg transition-all duration-200",
@@ -149,6 +136,7 @@ export function AuthModal({ isOpen, onClose, onAuth }: AuthModalProps) {
                     Sign In
                   </button>
                   <button
+                    type="button"
                     onClick={() => switchMode('signup')}
                     className={cn(
                       "flex-1 py-2.5 text-sm font-bold rounded-lg transition-all duration-200",
@@ -276,12 +264,13 @@ export function AuthModal({ isOpen, onClose, onAuth }: AuthModalProps) {
                 {/* Submit */}
                 <button
                   type="submit"
-                  className="w-full py-3.5 bg-primary text-white font-bold rounded-xl hover:opacity-90 transition-opacity shadow-[0_4px_16px_rgba(8,145,178,0.25)] flex items-center justify-center gap-2 text-sm"
+                  disabled={submitting}
+                  className="w-full disabled:opacity-60 disabled:cursor-wait py-3.5 bg-primary text-white font-bold rounded-xl hover:opacity-90 transition-opacity shadow-[0_4px_16px_rgba(8,145,178,0.25)] flex items-center justify-center gap-2 text-sm"
                 >
                   <span className="material-symbols-outlined text-lg">
                     {mode === 'signin' ? 'login' : 'person_add'}
                   </span>
-                  {mode === 'signin' ? 'Sign In' : 'Create Account'}
+                  {submitting ? 'Please wait…' : mode === 'signin' ? 'Sign In' : 'Create Account'}
                 </button>
 
                 {/* Footer text */}
