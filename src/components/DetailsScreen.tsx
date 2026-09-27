@@ -2,6 +2,8 @@ import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { ScrollQuiz } from './ScrollQuiz';
+import type { GraphData } from '../types';
+import type { Screen } from '../App';
 
 // ─── Helper: build a dynamic roadmap from graph nodes ───────────────
 function buildDynamicRoadmap(data: any) {
@@ -79,7 +81,7 @@ function buildDynamicRelatedModules(data: any) {
 }
 
 // ─── Main DetailsScreen ─────────────────────────────────────────────
-export function DetailsScreen({ data, viewedNodeIds }: { data: any, viewedNodeIds: Set<string> }) {
+export function DetailsScreen({ data, viewedNodeIds, onNavigate }: { data: GraphData | null, viewedNodeIds: Set<string>, onNavigate: (screen: Screen) => void }) {
   const [isRelatedMaximized, setIsRelatedMaximized] = useState(false);
 
   // Dynamic data from graph
@@ -93,12 +95,12 @@ export function DetailsScreen({ data, viewedNodeIds }: { data: any, viewedNodeId
       description: base.description || 'Your uploaded document has been analyzed and the knowledge graph is ready for exploration.',
       complexity: base.complexity || 5,
       category: base.category || 'General Study',
-      roadmap: dynamicRoadmap || base.roadmap || [
+      roadmap: (base.roadmap?.length ? base.roadmap : null) || dynamicRoadmap || [
         { number: '01', title: 'Document Scan', status: 'completed', desc: 'Initial extraction of core content.' },
         { number: '02', title: 'Concept Mapping', status: 'in-progress', desc: 'Building relationships between entities.' },
         { number: '03', title: 'Deep Analysis', status: 'locked', desc: 'Detailed semantic understanding.' },
       ],
-      relatedModules: dynamicModules || base.relatedModules || [
+      relatedModules: (base.relatedModules?.length ? base.relatedModules : null) || dynamicModules || [
         { icon: 'analytics', title: 'Pattern Recognition', desc: 'Statistical distribution of key terms' },
         { icon: 'account_tree', title: 'Hierarchy Discovery', desc: 'Nested relationship identification' },
         { icon: 'hub', title: 'Semantic Links', desc: 'Cross-concept connections' },
@@ -106,23 +108,21 @@ export function DetailsScreen({ data, viewedNodeIds }: { data: any, viewedNodeId
     };
   }, [data, dynamicRoadmap, dynamicModules]);
 
+  const scrollToQuiz = () => document.getElementById('knowledge-check')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
   const nodeCount = data?.nodes?.length || 0;
-  const exploredCount = viewedNodeIds?.size || 0;
+  const exploredCount = (data?.nodes || []).filter((n: any) => viewedNodeIds?.has(n.id)).length;
   const progressPercent = nodeCount > 0 ? Math.round((exploredCount / nodeCount) * 100) : 0;
   const filename = data?.filename || 'No document loaded';
   const hasData = !!(data && data.nodes && data.nodes.length > 0);
+  const complexity = Number(metadata.complexity) || 5;
 
   return (
     <div className="space-y-12 py-8 relative">
 
       {/* ─── Top Hero Card with PDF info ──────────────────────── */}
       <div className="relative h-64 rounded-[40px] overflow-hidden group">
-        <img
-          src={`https://picsum.photos/seed/${encodeURIComponent(metadata.title)}/1200/400`}
-          alt="Concept Background"
-          className="w-full h-full object-cover opacity-40 transition-transform duration-700 group-hover:scale-105"
-          referrerPolicy="no-referrer"
-        />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-secondary/10 to-tertiary/20 transition-transform duration-700 group-hover:scale-105" />
         <div className="absolute inset-0 bg-gradient-to-br from-white/90 via-white/50 to-transparent backdrop-blur-[2px]"></div>
         <div className="absolute inset-0 p-10 flex flex-col justify-between">
           <div className="flex justify-between items-start">
@@ -179,6 +179,8 @@ export function DetailsScreen({ data, viewedNodeIds }: { data: any, viewedNodeId
                 status={item.status}
                 desc={item.desc}
                 active={item.status === 'in-progress'}
+                onStudy={() => onNavigate('graph')}
+                onExercises={scrollToQuiz}
               />
             ))}
           </div>
@@ -190,10 +192,10 @@ export function DetailsScreen({ data, viewedNodeIds }: { data: any, viewedNodeId
             <div className="flex gap-2">
               <span className="px-4 py-1 bg-tertiary/10 text-tertiary text-[10px] font-black uppercase rounded-full border border-tertiary/20 tracking-widest">{metadata.category}</span>
               <span className="px-4 py-1 bg-primary/10 text-primary text-[10px] font-black uppercase rounded-full border border-primary/20 tracking-widest">
-                {metadata.complexity >= 8 ? 'High Complexity' : metadata.complexity >= 5 ? 'Medium Complexity' : 'Low Complexity'}
+                {complexity >= 8 ? 'High Complexity' : complexity >= 5 ? 'Medium Complexity' : 'Low Complexity'}
               </span>
             </div>
-            <h2 className="text-7xl font-headline font-bold leading-[0.9] text-slate-900">
+            <h2 className="text-5xl md:text-7xl font-headline font-bold leading-[0.9] text-slate-900 break-words">
               {metadata.title.split(' ').length > 1 ? (
                 <>
                   {metadata.title.split(' ').slice(0, -1).join(' ')} <br />
@@ -212,7 +214,7 @@ export function DetailsScreen({ data, viewedNodeIds }: { data: any, viewedNodeId
             <div className="bg-surface-container-low p-8 rounded-[32px] border border-slate-200 shadow-sm">
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant mb-4 opacity-50">Syllabus Complexity</p>
               <div className="flex items-baseline gap-2">
-                <p className="text-4xl font-headline font-bold text-primary">Level {metadata.complexity.toString().padStart(2, '0')}</p>
+                <p className="text-4xl font-headline font-bold text-primary">Level {String(complexity).padStart(2, '0')}</p>
                 <p className="text-xs font-bold text-slate-400">/ 10</p>
               </div>
             </div>
@@ -280,14 +282,16 @@ export function DetailsScreen({ data, viewedNodeIds }: { data: any, viewedNodeId
 
         {/* RIGHT — Knowledge Check Quiz */}
         <div className="lg:col-span-8">
-          <ScrollQuiz data={data} />
+          <div id="knowledge-check" className="scroll-mt-24">
+            <ScrollQuiz key={data?.id || data?.filename || 'none'} data={data} />
+          </div>
         </div>
       </div>
 
       {/* ─── Maximized Related Modules Overlay (outside grid, over everything) ─ */}
       <AnimatePresence>
         {isRelatedMaximized && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-12">
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-12">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -301,10 +305,10 @@ export function DetailsScreen({ data, viewedNodeIds }: { data: any, viewedNodeId
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
               transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-              className="relative w-full max-w-4xl bg-white rounded-[48px] p-16 shadow-2xl space-y-12 z-10"
+              className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-white rounded-[32px] md:rounded-[48px] p-8 md:p-16 shadow-2xl space-y-8 md:space-y-12 z-10"
             >
               <div className="flex justify-between items-center">
-                <h4 className="text-5xl font-headline font-bold">Extended Knowledge Domains</h4>
+                <h4 className="text-3xl md:text-5xl font-headline font-bold">Extended Knowledge Domains</h4>
                 <button onClick={() => setIsRelatedMaximized(false)} className="w-16 h-16 rounded-2xl bg-slate-900 text-white flex items-center justify-center hover:bg-primary transition-all">
                   <span className="material-symbols-outlined">close</span>
                 </button>
@@ -323,7 +327,7 @@ export function DetailsScreen({ data, viewedNodeIds }: { data: any, viewedNodeId
 }
 
 // ─── RoadmapItem ────────────────────────────────────────────────────
-function RoadmapItem({ number, title, status, desc, active = false }: { number: string; title: string; status: string; desc: string; active?: boolean }) {
+function RoadmapItem({ number, title, status, desc, active = false, onStudy, onExercises }: { number: string; title: string; status: string; desc: string; active?: boolean; onStudy: () => void; onExercises: () => void }) {
   return (
     <div className="relative group">
       <div className={cn(
@@ -342,7 +346,7 @@ function RoadmapItem({ number, title, status, desc, active = false }: { number: 
             status === 'completed' ? 'bg-tertiary/20 text-tertiary' :
             status === 'in-progress' ? 'bg-primary/20 text-primary' : 'bg-surface-container-highest text-on-surface-variant'
           )}>
-            {status.replace('-', ' ')}
+            {String(status || '').replace('-', ' ')}
           </span>
         </div>
         <p className="text-[10px] text-on-surface-variant leading-relaxed">
@@ -350,8 +354,8 @@ function RoadmapItem({ number, title, status, desc, active = false }: { number: 
         </p>
         {active && (
           <div className="flex gap-3 mt-4">
-            <button className="flex-1 py-2 bg-primary text-on-primary text-[10px] font-bold rounded-lg">Resume Study</button>
-            <button className="flex-1 py-2 bg-surface-container-highest text-on-surface text-[10px] font-bold rounded-lg">View Exercises</button>
+            <button onClick={onStudy} className="flex-1 py-2 bg-primary text-on-primary text-[10px] font-bold rounded-lg hover:opacity-90">Study in Graph</button>
+            <button onClick={onExercises} className="flex-1 py-2 bg-surface-container-highest text-on-surface text-[10px] font-bold rounded-lg hover:bg-surface-bright">Take the Quiz</button>
           </div>
         )}
       </div>

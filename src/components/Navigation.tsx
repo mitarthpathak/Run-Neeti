@@ -2,13 +2,14 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { User } from '../types';
+import type { Screen } from '../App';
 
 interface TopAppBarProps {
   user: User | null;
   onSignInClick: () => void;
   onSignOut: () => void;
-  currentScreen: string;
-  onScreenChange: (screen: string) => void;
+  currentScreen: Screen;
+  onScreenChange: (screen: Screen) => void;
 }
 
 export function TopAppBar({ user, onSignInClick, onSignOut, currentScreen, onScreenChange }: TopAppBarProps) {
@@ -31,12 +32,12 @@ export function TopAppBar({ user, onSignInClick, onSignOut, currentScreen, onScr
     return name.slice(0, 2).toUpperCase();
   };
 
-  const navLinks = [
-    { key: 'hero', label: 'Hero' },
+  const navLinks: { key: Screen; label: string }[] = [
+    { key: 'hero', label: 'Home' },
     { key: 'upload', label: 'Upload' },
     { key: 'graph', label: 'Graph' },
     { key: 'details', label: 'Details' },
-    ...(user ? [{ key: 'history', label: 'History' }] : []),
+    ...(user ? [{ key: 'history' as const, label: 'History' }] : []),
   ];
 
   return (
@@ -68,8 +69,10 @@ export function TopAppBar({ user, onSignInClick, onSignOut, currentScreen, onScr
         {/* Auth Area */}
         {user ? (
           <div className="relative" ref={dropdownRef}>
-            <button 
+            <button
               onClick={() => setShowDropdown(!showDropdown)}
+              aria-label="Account menu"
+              aria-expanded={showDropdown}
               className="flex items-center gap-2.5 pl-1 pr-3 py-1 rounded-full hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-200"
             >
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white text-xs font-bold">
@@ -110,14 +113,14 @@ export function TopAppBar({ user, onSignInClick, onSignOut, currentScreen, onScr
                           <span className="material-symbols-outlined text-primary text-xs">phone</span>
                           <span className="text-[9px] uppercase tracking-wider text-slate-400 font-bold">Phone</span>
                         </div>
-                        <p className="text-xs font-medium text-on-surface truncate">{user.phone}</p>
+                        <p className="text-xs font-medium text-on-surface truncate">{user.phone || '—'}</p>
                       </div>
                       <div className="bg-white rounded-lg p-2.5 border border-slate-100">
                         <div className="flex items-center gap-1.5 mb-0.5">
                           <span className="material-symbols-outlined text-secondary text-xs">cake</span>
                           <span className="text-[9px] uppercase tracking-wider text-slate-400 font-bold">Age</span>
                         </div>
-                        <p className="text-xs font-medium text-on-surface">{user.age} years</p>
+                        <p className="text-xs font-medium text-on-surface">{user.age ? `${user.age} years` : '—'}</p>
                       </div>
                     </div>
                   </div>
@@ -137,8 +140,9 @@ export function TopAppBar({ user, onSignInClick, onSignOut, currentScreen, onScr
             </AnimatePresence>
           </div>
         ) : (
-          <button 
+          <button
             onClick={onSignInClick}
+            aria-label="Sign In"
             className="flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-bold rounded-xl hover:opacity-90 transition-opacity shadow-[0_2px_8px_rgba(8,145,178,0.2)]"
           >
             <span className="material-symbols-outlined text-lg">person</span>
@@ -150,10 +154,10 @@ export function TopAppBar({ user, onSignInClick, onSignOut, currentScreen, onScr
   );
 }
 
-export function BottomNavBar({ currentScreen, onScreenChange, user }: { currentScreen: string; onScreenChange: (screen: string) => void, user: User | null }) {
+export function BottomNavBar({ currentScreen, onScreenChange, user }: { currentScreen: Screen; onScreenChange: (screen: Screen) => void, user: User | null }) {
   return (
-    <nav className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex items-center space-x-2 bg-white/70 backdrop-blur-md shadow-[0_4px_24px_rgba(0,0,0,0.1)] rounded-full px-4 py-2 border border-slate-200/60">
-      <NavItem icon="auto_awesome" label="Hero" active={currentScreen === 'hero'} onClick={() => onScreenChange('hero')} />
+    <nav className="fixed bottom-4 md:bottom-8 left-1/2 -translate-x-1/2 z-50 flex items-center space-x-1 md:space-x-2 max-w-[calc(100vw-16px)] bg-white/70 backdrop-blur-md shadow-[0_4px_24px_rgba(0,0,0,0.1)] rounded-full px-4 py-2 border border-slate-200/60">
+      <NavItem icon="auto_awesome" label="Home" active={currentScreen === 'hero'} onClick={() => onScreenChange('hero')} />
       <NavItem icon="upload_file" label="Upload" active={currentScreen === 'upload'} onClick={() => onScreenChange('upload')} />
       <NavItem icon="account_tree" label="Graph" active={currentScreen === 'graph'} onClick={() => onScreenChange('graph')} />
       <NavItem icon="description" label="Details" active={currentScreen === 'details'} onClick={() => onScreenChange('details')} />
@@ -164,15 +168,17 @@ export function BottomNavBar({ currentScreen, onScreenChange, user }: { currentS
 
 function NavItem({ icon, label, active = false, onClick }: { icon: string; label: string; active?: boolean; onClick: () => void }) {
   return (
-    <button 
+    <button
       onClick={onClick}
+      aria-label={label}
+      aria-current={active ? 'page' : undefined}
       className={cn(
-        "flex flex-col items-center justify-center px-5 py-2 rounded-full transition-all",
+        "flex flex-col items-center justify-center min-w-0 px-2.5 sm:px-3 md:px-5 py-2 rounded-full transition-all",
         active ? "bg-primary/10 text-primary scale-90 shadow-[0_0_12px_rgba(8,145,178,0.15)]" : "text-slate-400 hover:bg-slate-100"
       )}
     >
       <span className="material-symbols-outlined mb-1">{icon}</span>
-      <span className="text-[10px] uppercase tracking-widest font-bold">{label}</span>
+      <span className="text-[9px] sm:text-[10px] uppercase tracking-wider sm:tracking-widest font-bold">{label}</span>
     </button>
   );
 }

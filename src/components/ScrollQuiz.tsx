@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { motion, AnimatePresence, useScroll, useTransform, useMotionValueEvent } from 'motion/react';
+import { motion, AnimatePresence, useScroll, useTransform } from 'motion/react';
 import { cn } from '../lib/utils';
 
 // ─── Types ──────────────────────────────────────────────────────────
@@ -25,7 +25,7 @@ function generateQuestionsFromGraph(data: any): QuizQuestion[] {
   if (usableNodes.length < 3) return getFallbackQuestions();
 
   // Type 1: "What is [concept]?" — pick the correct description
-  usableNodes.slice(0, 4).forEach((node: any, idx: number) => {
+  shuffle(usableNodes).slice(0, 4).forEach((node: any, idx: number) => {
     const wrongDescs = usableNodes
       .filter((n: any) => n.id !== node.id && n.desc)
       .sort(() => Math.random() - 0.5)
@@ -35,10 +35,11 @@ function generateQuestionsFromGraph(data: any): QuizQuestion[] {
     if (wrongDescs.length < 3) return;
 
     const correctDesc = truncate(node.desc, 80);
+    if (wrongDescs.includes(correctDesc) || new Set(wrongDescs).size < 3) return;
     const options = shuffle([correctDesc, ...wrongDescs]);
 
     questions.push({
-      id: idx,
+      id: questions.length,
       question: `What best describes "${node.label}"?`,
       options,
       correctIndex: options.indexOf(correctDesc),
@@ -64,7 +65,9 @@ function generateQuestionsFromGraph(data: any): QuizQuestion[] {
       .slice(0, 3);
     if (wrongs.length < 3) return;
 
-    const options = shuffle([correct.label, ...wrongs.map((w: any) => w.label)]);
+    const wrongLabels = [...new Set<string>(wrongs.map((w: any) => w.label))].filter(l => l !== correct.label);
+    if (wrongLabels.length < 3) return;
+    const options = shuffle([correct.label, ...wrongLabels]);
     questions.push({
       id: questions.length,
       question: `Which of these is classified as a "${formatType(type)}" concept?`,
@@ -77,7 +80,8 @@ function generateQuestionsFromGraph(data: any): QuizQuestion[] {
 
   // Ensure at least 3 questions
   if (questions.length < 3) {
-    return [...questions, ...getFallbackQuestions().slice(0, 3 - questions.length)];
+    const extra = getFallbackQuestions().slice(0, 3 - questions.length);
+    return [...questions, ...extra].map((q, i) => ({ ...q, id: i }));
   }
 
   return questions.slice(0, 6);
@@ -422,15 +426,6 @@ export function ScrollQuiz({ data }: { data: any }) {
 
   const containerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: containerRef, offset: ['start end', 'end start'] });
-
-  // Map scroll progress to question index
-  useMotionValueEvent(scrollYProgress, 'change', (val) => {
-    // Only auto-advance on scroll if not interacting (not answered yet)
-    const idx = Math.min(Math.floor(val * questions.length * 1.2), questions.length - 1);
-    if (idx >= 0 && idx !== currentIndex && !revealed[currentIndex]) {
-      // Don't auto-advance, let user control
-    }
-  });
 
   const parallaxY = useTransform(scrollYProgress, [0, 1], [40, -40]);
 
