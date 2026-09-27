@@ -1,5 +1,5 @@
 {
-  "name": "The Illuminated Scholar",
-  "description": "A high-end editorial knowledge extraction engine that maps the semantic landscape of academic manuscripts in real-time.",
+  "name": "Run-Neeti",
+  "description": "Upload a PDF and turn it into an interactive AI knowledge graph, study roadmap and quiz.",
   "requestFramePermissions": []
 }
