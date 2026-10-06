@@ -15,7 +15,7 @@
     "test": "npm test --prefix server"
   },
   "dependencies": {
-    "@google/genai": "^2.24.0",
+    "@google/genai": "^2.27.0",
     "clsx": "^2.1.1",
     "cors": "^2.8.6",
     "d3-force": "^3.0.0",
